@@ -4,6 +4,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
+import requests as http_requests
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -81,3 +82,30 @@ def create_order(req: func.HttpRequest) -> func.HttpResponse:
         mimetype="application/json",
         status_code=202,
     )
+
+
+@app.service_bus_topic_trigger(
+    arg_name="message",
+    topic_name="orders-topic",
+    subscription_name="processor-sub",
+    connection="SERVICE_BUS_CONNECTION_STRING",
+)
+def process_order(message: func.ServiceBusMessage) -> None:
+    order_data = json.loads(message.get_body().decode("utf-8"))
+    order_id = order_data.get("order_id", "unknown")
+    logging.info(f"Processing order {order_id}")
+
+    try:
+        response = http_requests.post(
+            "https://jsonplaceholder.typicode.com/posts",
+            json={
+                "title": f"Order {order_id}",
+                "body": json.dumps(order_data),
+                "userId": 1,
+            },
+            timeout=10,
+        )
+        logging.info(f"Order {order_id} processed, SaaS response: {response.status_code}")
+    except http_requests.RequestException as e:
+        logging.error(f"Order {order_id} SaaS call failed: {e}")
+        raise  # Let Service Bus retry via max_delivery_count
