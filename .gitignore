@@ -22,3 +22,6 @@ functions/.python_packages/
 
 # OS
 .DS_Store
+
+# Tests
+tests/

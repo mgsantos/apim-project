@@ -156,6 +156,78 @@ After deploying, check these Azure Portal blades:
 | **Application Insights > Failures** | Failed requests and dependency calls |
 | **Service Bus > Overview** | Active messages, dead-letter count |
 
+## Terraform Dependency Graph
+
+```mermaid
+flowchart TD
+    subgraph Naming
+        RP[random_pet.suffix]
+        RS[random_string.storage]
+    end
+
+    subgraph "Resource Group"
+        RG[azurerm_resource_group.rg<br/>rg-orderhub-*]
+    end
+
+    RP --> RG
+    RP --> SB
+    RP --> FA
+    RP --> APIM
+    RS --> SA
+
+    subgraph Storage
+        SA[azurerm_storage_account.storage<br/>storderhub*]
+    end
+
+    subgraph Observability
+        AI[azurerm_application_insights.ai<br/>ai-orderhub]
+    end
+
+    subgraph "Service Bus"
+        SB[azurerm_servicebus_namespace.sb<br/>sb-orderhub-* · Standard SKU]
+        ST[azurerm_servicebus_topic.orders<br/>orders-topic]
+        SS[azurerm_servicebus_subscription.processor<br/>processor-sub]
+    end
+
+    subgraph "Compute"
+        SP[azurerm_service_plan.plan<br/>plan-orderhub · Y1 Linux]
+        FA[azurerm_linux_function_app.functions<br/>func-orderhub-* · Python 3.12]
+    end
+
+    subgraph "API Management"
+        APIM[azurerm_api_management.apim<br/>apim-orderhub-* · Developer_1]
+        OA[azurerm_api_management_api.orders<br/>orders-api · /orders]
+        PA[azurerm_api_management_api.products<br/>products-api · /products]
+        OOP[api_operation.create_order<br/>POST /orders]
+        POP[api_operation.get_products<br/>GET /products]
+        OPOL[api_policy.orders_policy<br/>order-policy.xml]
+        PPOL[api_policy.products_policy<br/>product-policy.xml]
+    end
+
+    RG --> SA
+    RG --> AI
+    RG --> SB
+    RG --> SP
+    RG --> APIM
+
+    SB --> ST
+    ST --> SS
+
+    SP --> FA
+    SA --> FA
+    AI --> FA
+    SB -.->|conn string| FA
+
+    APIM --> OA
+    APIM --> PA
+    FA -.->|service_url| OA
+    FA -.->|service_url| PA
+    OA --> OOP
+    OA --> OPOL
+    PA --> POP
+    PA --> PPOL
+```
+
 ## Project Structure
 
 ```
