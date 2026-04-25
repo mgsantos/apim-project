@@ -1,0 +1,37 @@
+<policies>
+  <inbound>
+    <base />
+    <rate-limit calls="50" renewal-period="60" />
+    <cache-lookup vary-by-query-parameter="*" />
+    <!--
+      JWT Validation (uncommented when using Entra ID / Azure AD):
+
+      To enable, register an app in Entra ID, then replace the values below:
+      - openid-config url: https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration
+      - audience: your app's client ID
+
+      <validate-jwt header-name="Authorization" failed-validation-httpcode="401"
+                     failed-validation-error-message="Unauthorized">
+        <openid-config url="https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration" />
+        <audiences>
+          <audience>{your-client-id}</audience>
+        </audiences>
+      </validate-jwt>
+    -->
+  </inbound>
+  <backend>
+    <base />
+    <retry condition="@(context.Response.StatusCode == 500 || context.Response.StatusCode == 503)"
+           count="3" interval="2" first-fast-retry="false" />
+  </backend>
+  <outbound>
+    <base />
+    <cache-store duration="300" />
+    <set-header name="X-Processed-By" exists-action="override">
+      <value>APIM-OrderHub</value>
+    </set-header>
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>

@@ -1,0 +1,20 @@
+<policies>
+  <inbound>
+    <base />
+    <rate-limit calls="100" renewal-period="60" />
+    <cache-lookup vary-by-query-parameter="*" />
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+    <cache-store duration="600" />
+    <set-header name="X-Processed-By" exists-action="override">
+      <value>APIM-OrderHub</value>
+    </set-header>
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>

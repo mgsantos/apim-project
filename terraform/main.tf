@@ -83,3 +83,71 @@ resource "azurerm_linux_function_app" "functions" {
     "SERVICE_BUS_CONNECTION_STRING"   = azurerm_servicebus_namespace.sb.default_primary_connection_string
   }
 }
+
+# API Management
+resource "azurerm_api_management" "apim" {
+  name                = "apim-${var.prefix}-${random_pet.suffix.id}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  publisher_name      = "OrderHub Team"
+  publisher_email     = var.publisher_email
+  sku_name            = "Developer_1"
+}
+
+# Orders API
+resource "azurerm_api_management_api" "orders" {
+  name                = "orders-api"
+  resource_group_name = azurerm_resource_group.rg.name
+  api_management_name = azurerm_api_management.apim.name
+  revision            = "1"
+  display_name        = "Orders API"
+  path                = "orders"
+  protocols           = ["https"]
+  service_url         = "https://${azurerm_linux_function_app.functions.default_hostname}/api"
+}
+
+resource "azurerm_api_management_api_operation" "create_order" {
+  operation_id        = "create-order"
+  api_name            = azurerm_api_management_api.orders.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_resource_group.rg.name
+  display_name        = "Create Order"
+  method              = "POST"
+  url_template        = "/orders"
+}
+
+resource "azurerm_api_management_api_policy" "orders_policy" {
+  api_name            = azurerm_api_management_api.orders.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_resource_group.rg.name
+  xml_content         = file("${path.module}/policies/order-policy.xml")
+}
+
+# Products API
+resource "azurerm_api_management_api" "products" {
+  name                = "products-api"
+  resource_group_name = azurerm_resource_group.rg.name
+  api_management_name = azurerm_api_management.apim.name
+  revision            = "1"
+  display_name        = "Products API"
+  path                = "products"
+  protocols           = ["https"]
+  service_url         = "https://${azurerm_linux_function_app.functions.default_hostname}/api"
+}
+
+resource "azurerm_api_management_api_operation" "get_products" {
+  operation_id        = "get-products"
+  api_name            = azurerm_api_management_api.products.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_resource_group.rg.name
+  display_name        = "Get Products"
+  method              = "GET"
+  url_template        = "/products"
+}
+
+resource "azurerm_api_management_api_policy" "products_policy" {
+  api_name            = azurerm_api_management_api.products.name
+  api_management_name = azurerm_api_management.apim.name
+  resource_group_name = azurerm_resource_group.rg.name
+  xml_content         = file("${path.module}/policies/product-policy.xml")
+}
