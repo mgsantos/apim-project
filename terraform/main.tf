@@ -29,3 +29,24 @@ resource "azurerm_application_insights" "ai" {
   resource_group_name = azurerm_resource_group.rg.name
   application_type    = "web"
 }
+
+# Service Bus Namespace (Standard SKU for Topics support)
+resource "azurerm_servicebus_namespace" "sb" {
+  name                = "sb-${var.prefix}-${random_pet.suffix.id}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard"
+}
+
+# Service Bus Topic
+resource "azurerm_servicebus_topic" "orders" {
+  name         = "orders-topic"
+  namespace_id = azurerm_servicebus_namespace.sb.id
+}
+
+# Service Bus Subscription (processor listens here)
+resource "azurerm_servicebus_subscription" "processor" {
+  name               = "processor-sub"
+  topic_id           = azurerm_servicebus_topic.orders.id
+  max_delivery_count = 5
+}
