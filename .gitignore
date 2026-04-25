@@ -1,0 +1,24 @@
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfplan
+terraform/.terraform.lock.hcl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Azure Functions
+functions/local.settings.json
+functions/.python_packages/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
