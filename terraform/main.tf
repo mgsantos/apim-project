@@ -50,3 +50,36 @@ resource "azurerm_servicebus_subscription" "processor" {
   topic_id           = azurerm_servicebus_topic.orders.id
   max_delivery_count = 5
 }
+
+# Service Plan (Consumption - free tier)
+resource "azurerm_service_plan" "plan" {
+  name                = "plan-${var.prefix}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  os_type             = "Linux"
+  sku_name            = "Y1"
+}
+
+# Linux Function App
+resource "azurerm_linux_function_app" "functions" {
+  name                       = "func-${var.prefix}-${random_pet.suffix.id}"
+  location                   = azurerm_resource_group.rg.location
+  resource_group_name        = azurerm_resource_group.rg.name
+  service_plan_id            = azurerm_service_plan.plan.id
+  storage_account_name       = azurerm_storage_account.storage.name
+  storage_account_access_key = azurerm_storage_account.storage.primary_access_key
+
+  site_config {
+    application_stack {
+      python_version = "3.12"
+    }
+    application_insights_key               = azurerm_application_insights.ai.instrumentation_key
+    application_insights_connection_string = azurerm_application_insights.ai.connection_string
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME"       = "python"
+    "AzureWebJobsFeatureFlags"       = "EnableWorkerIndexing"
+    "SERVICE_BUS_CONNECTION_STRING"   = azurerm_servicebus_namespace.sb.default_primary_connection_string
+  }
+}
