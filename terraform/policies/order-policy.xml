@@ -2,9 +2,11 @@
   <inbound>
     <base />
     <rate-limit calls="50" renewal-period="60" />
-    <cache-lookup vary-by-query-parameter="*" />
+    <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" caching-type="internal">
+      <vary-by-query-parameter>*</vary-by-query-parameter>
+    </cache-lookup>
     <!--
-      JWT Validation (uncommented when using Entra ID / Azure AD):
+      JWT Validation (uncomment when using Entra ID / Azure AD):
 
       To enable, register an app in Entra ID, then replace the values below:
       - openid-config url: https://login.microsoftonline.com/{tenant-id}/v2.0/.well-known/openid-configuration
@@ -20,9 +22,9 @@
     -->
   </inbound>
   <backend>
-    <base />
-    <retry condition="@(context.Response.StatusCode == 500 || context.Response.StatusCode == 503)"
-           count="3" interval="2" first-fast-retry="false" />
+    <retry condition="@(context.Response.StatusCode >= 500)" count="3" interval="2" first-fast-retry="false">
+      <forward-request buffer-request-body="true" />
+    </retry>
   </backend>
   <outbound>
     <base />

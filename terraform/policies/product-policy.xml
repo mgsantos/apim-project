@@ -2,7 +2,9 @@
   <inbound>
     <base />
     <rate-limit calls="100" renewal-period="60" />
-    <cache-lookup vary-by-query-parameter="*" />
+    <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" caching-type="internal">
+      <vary-by-query-parameter>*</vary-by-query-parameter>
+    </cache-lookup>
   </inbound>
   <backend>
     <base />
